@@ -1,0 +1,50 @@
+# Deployment : 3 replicas du front, recrees automatiquement en cas de perte
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackr-front
+  namespace: trackr
+  labels:
+    app: trackr
+    tier: front
+    env: recette
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: trackr
+      tier: front
+      env: recette
+  template:
+    metadata:
+      labels:
+        app: trackr
+        tier: front
+        env: recette
+    spec:
+      containers:
+        - name: front
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          ports:
+            - containerPort: 9898
+              name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-front
+  namespace: trackr
+  labels:
+    app: trackr
+    tier: front
+    env: recette
+spec:
+  type: ClusterIP
+  selector:
+    app: trackr
+    tier: front
+    env: recette
+  ports:
+    - port: 80
+      targetPort: http
