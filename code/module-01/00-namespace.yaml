@@ -1,0 +1,7 @@
+# Namespace du fil rouge TrackR
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: trackr
+  labels:
+    app.kubernetes.io/part-of: trackr

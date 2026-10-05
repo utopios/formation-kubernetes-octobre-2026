@@ -1,0 +1,14 @@
+# Service ClusterIP : nom DNS stable devant tous les Pods tier=api de TrackR
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-api
+  labels:
+    app: trackr
+spec:
+  selector:
+    app: trackr
+    tier: api
+  ports:
+    - port: 9898
+      targetPort: 9898

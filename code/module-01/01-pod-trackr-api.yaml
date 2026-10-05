@@ -3,6 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: trackr-api
+  namespace: trackr
   labels:
     app: trackr
     tier: api

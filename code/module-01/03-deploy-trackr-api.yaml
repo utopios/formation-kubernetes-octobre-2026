@@ -1,0 +1,25 @@
+# Deployment : 3 replicas de l'API, recrees automatiquement en cas de perte
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackr-api
+  labels:
+    app: trackr
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: trackr
+      tier: api
+  template:
+    metadata:
+      labels:
+        app: trackr
+        tier: api
+        env: formation
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          ports:
+            - containerPort: 9898
