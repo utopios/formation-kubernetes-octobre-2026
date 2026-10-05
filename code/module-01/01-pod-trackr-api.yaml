@@ -1,0 +1,15 @@
+# Premier Pod TrackR : l'API (podinfo en mode backend)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trackr-api
+  labels:
+    app: trackr
+    tier: api
+    env: formation
+spec:
+  containers:
+    - name: api
+      image: ghcr.io/stefanprodan/podinfo:6.9.2
+      ports:
+        - containerPort: 9898
