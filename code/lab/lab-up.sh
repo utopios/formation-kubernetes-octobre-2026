@@ -3,6 +3,8 @@
 # et installe metrics-server.
 # Fonctionne avec Docker (defaut) ou Podman : LAB_PROVIDER=podman ./lab-up.sh
 # Sur Linux (Debian, Ubuntu, WSL2) : installe si besoin Docker Engine (ou Podman), kubectl et kind.
+# Sous WSL2 avec Docker Desktop : demarre Docker Desktop et active son integration WSL
+# (LAB_DOCKER=engine pour installer Docker Engine dans la distribution a la place).
 # Sur macOS / Git Bash : verifie seulement la presence des outils (voir README.md).
 set -euo pipefail
 SCRIPT="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -39,14 +41,54 @@ install_base() {
   fi
 }
 
+wait_docker() {  # wait_docker <secondes>
+  for _ in $(seq 1 "$1"); do
+    if command -v docker >/dev/null && docker info >/dev/null 2>&1; then return 0; fi
+    sleep 1; hash -r
+  done
+  return 1
+}
+
+# WSL2 + Docker Desktop cote Windows : demarrer Docker Desktop et activer l'integration WSL
+# pour cette distribution (Settings > Resources > WSL integration), au lieu d'installer un 2e moteur.
+use_docker_desktop() {
+  local win_docker="/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+  local distro="${WSL_DISTRO_NAME:-Ubuntu}"
+  echo "==> Docker Desktop detecte sous Windows : demarrage"
+  timeout 180 "$win_docker" desktop start >/dev/null 2>&1 || true
+  if wait_docker 60; then return 0; fi
+
+  echo "==> Activation de l'integration WSL de Docker Desktop pour $distro"
+  local appdata
+  appdata="$(wslpath "$(cmd.exe /c 'echo %APPDATA%' 2>/dev/null | tr -d '\r')")"
+  local f="$appdata/Docker/settings-store.json" key=IntegratedWslDistros
+  if [ ! -f "$f" ]; then f="$appdata/Docker/settings.json"; key=integratedWslDistros; fi
+  if [ ! -f "$f" ]; then
+    echo "Reglages Docker Desktop introuvables : lancer Docker Desktop une fois sous Windows" >&2
+    echo "(accepter les conditions d'utilisation), puis relancer ./lab-up.sh" >&2
+    exit 1
+  fi
+  timeout 120 "$win_docker" desktop stop >/dev/null 2>&1 || true
+  cp "$f" "$f.bak-lab"
+  jq --arg k "$key" --arg d "$distro" '.[$k] = (((.[$k] // []) + [$d]) | unique)' "$f.bak-lab" > "$f"
+  timeout 180 "$win_docker" desktop start >/dev/null 2>&1 || true
+  if wait_docker 120; then return 0; fi
+
+  echo "Docker n'est toujours pas disponible dans $distro." >&2
+  echo "Verifier sous Windows : Docker Desktop demarre (\"Engine running\") et" >&2
+  echo "Settings > Resources > WSL integration > $distro active, puis relancer ./lab-up.sh" >&2
+  echo "(ou LAB_DOCKER=engine ./lab-up.sh pour installer Docker Engine directement dans $distro)" >&2
+  exit 1
+}
+
 install_docker() {
   if docker info >/dev/null 2>&1; then return; fi
+  if $IS_WSL && [ "${LAB_DOCKER:-desktop}" != "engine" ] \
+     && [ -e "/mnt/c/Program Files/Docker/Docker/Docker Desktop.exe" ]; then
+    use_docker_desktop
+    return
+  fi
   if ! command -v docker >/dev/null; then
-    if $IS_WSL && [ -e "/mnt/c/Program Files/Docker/Docker/Docker Desktop.exe" ]; then
-      echo "Docker Desktop est installe sous Windows mais pas visible dans cette distribution." >&2
-      echo "Docker Desktop > Settings > Resources > WSL integration : activer cette distribution, puis relancer." >&2
-      exit 1
-    fi
     echo "==> Installation de Docker Engine"
     curl -fsSL https://get.docker.com | $SUDO sh
   fi
