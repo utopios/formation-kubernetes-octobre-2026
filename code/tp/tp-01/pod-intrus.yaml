@@ -1,0 +1,17 @@
+# TP 1 - Mission 2 : un Pod cree a la main, hors de tout Deployment (fourni)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: trackr-front-intrus
+  labels:
+    app: trackr
+    tier: front
+    env: recette
+spec:
+  containers:
+    - name: front
+      image: ghcr.io/stefanprodan/podinfo:6.9.2
+      args: ["./podinfo", "--port=9898", "--ui-message=Je suis l'intrus"]
+      ports:
+        - name: http
+          containerPort: 9898
