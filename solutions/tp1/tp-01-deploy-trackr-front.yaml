@@ -41,7 +41,7 @@ metadata:
     tier: front
     env: recette
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: trackr
     tier: front
@@ -49,3 +49,4 @@ spec:
   ports:
     - port: 80
       targetPort: http
+      nodePort: 30080
