@@ -1,0 +1,29 @@
+# Générateur de charge pour la démo HPA : 4 pods busybox, 6 boucles wget
+# parallèles chacun, sans pause, vers l'API TrackR.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: generateur-charge
+  labels: {app: generateur-charge}
+spec:
+  replicas: 4
+  selector:
+    matchLabels: {app: generateur-charge}
+  template:
+    metadata:
+      labels: {app: generateur-charge}
+    spec:
+      containers:
+        - name: charge
+          image: busybox:1.37
+          command:
+            - sh
+            - -c
+            - |
+              for i in 1 2 3 4 5 6; do
+                (while true; do wget -q -O /dev/null http://trackr-api:9898/; done) &
+              done
+              wait
+          resources:
+            requests: {cpu: 50m, memory: 16Mi}
+            limits: {cpu: 500m, memory: 64Mi}

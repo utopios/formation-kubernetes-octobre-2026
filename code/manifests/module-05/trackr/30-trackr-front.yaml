@@ -1,0 +1,76 @@
+# TrackR — brique front (podinfo, appelle l'API). Exposée en NodePort 30080
+# (le port 30080 du control-plane kind est publié sur l'hôte : http://localhost:30080).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackr-front
+  labels:
+    app: trackr-front
+    app.kubernetes.io/part-of: trackr
+  annotations:
+    kubernetes.io/change-cause: "TrackR front 6.9.2 initiale"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: trackr-front
+  template:
+    metadata:
+      labels:
+        app: trackr-front
+        app.kubernetes.io/part-of: trackr
+    spec:
+      containers:
+        - name: front
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          command:
+            - ./podinfo
+            - --port=9898
+            - --level=info
+            - --backend-url=http://trackr-api:9898/echo
+          env:
+            - name: PODINFO_UI_COLOR
+              value: "#438ecc"
+            - name: PODINFO_UI_MESSAGE
+              value: "TrackR - Logivia"
+          ports:
+            - name: http
+              containerPort: 9898
+          resources:
+            requests: {cpu: 50m, memory: 32Mi}
+            limits: {cpu: 250m, memory: 128Mi}
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}
+            periodSeconds: 3
+            failureThreshold: 2
+          lifecycle:
+            preStop:              # laisse le temps aux EndpointSlices d'oublier le Pod
+              exec:
+                command: ["sleep", "5"]
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-front
+  labels:
+    app: trackr-front
+    app.kubernetes.io/part-of: trackr
+spec:
+  type: NodePort
+  selector:
+    app: trackr-front
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http
+      nodePort: 30081
