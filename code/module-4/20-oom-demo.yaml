@@ -1,0 +1,25 @@
+# Module 4 — Mesure : un conteneur qui depasse sa limite memoire est tue (OOMKilled).
+# Image busybox multi-architecture (x86_64 et arm64). L'image polinux/stress de la
+# documentation officielle n'existe qu'en amd64 : on reproduit l'effet avec busybox.
+# `head -c 250m /dev/zero | tail` : tail garde en memoire toute l'entree (aucun saut
+# de ligne), donc le processus tente d'occuper 250 Mo alors que la limite est 100 Mi.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: oom-demo
+  labels:
+    app.kubernetes.io/part-of: trackr
+    demo: oom
+spec:
+  restartPolicy: Always
+  containers:
+    - name: memhog
+      image: busybox:1.37
+      command: ["sh", "-c", "echo 'allocation de 250 Mo'; head -c 250m /dev/zero | tail"]
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "100Mi"
+          cpu: "100m"

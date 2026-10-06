@@ -1,0 +1,44 @@
+# Module 4 — Les trois classes de QoS calculees par Kubernetes a partir des resources.
+# kubectl get pod -l demo=qos -o custom-columns=NOM:.metadata.name,QOS:.status.qosClass
+---
+# Guaranteed : requests = limits pour CPU ET memoire, sur tous les conteneurs
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qos-guaranteed
+  labels: { demo: qos }
+spec:
+  containers:
+    - name: c
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      resources:
+        requests: { cpu: "100m", memory: "64Mi" }
+        limits:   { cpu: "100m", memory: "64Mi" }
+---
+# Burstable : au moins une request ou une limit, mais pas l'egalite partout
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qos-burstable
+  labels: { demo: qos }
+spec:
+  containers:
+    - name: c
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      resources:
+        requests: { cpu: "50m", memory: "32Mi" }
+        limits:   { memory: "128Mi" }
+---
+# BestEffort : aucune request ni limit
+apiVersion: v1
+kind: Pod
+metadata:
+  name: qos-besteffort
+  labels: { demo: qos }
+spec:
+  containers:
+    - name: c
+      image: busybox:1.37
+      command: ["sleep", "3600"]

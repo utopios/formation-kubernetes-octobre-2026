@@ -1,0 +1,26 @@
+# Module 4 — Generateur de charge pour mesurer TrackR avec kubectl top
+# 4 boucles paralleles : 2 vers le front (/api/echo relaye a l'API), 2 vers le cache via l'API.
+# kubectl apply -n trackr -f 24-charge-trackr.yaml ; attendre 60 s ; kubectl top pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: charge-trackr
+  labels:
+    demo: charge
+spec:
+  restartPolicy: Never
+  containers:
+    - name: charge
+      image: busybox:1.37
+      command:
+        - sh
+        - -c
+        - |
+          for n in 1 2; do
+            (while true; do wget -q -O /dev/null --post-data='colis LGV-1042' http://trackr-front:9898/api/echo; done) &
+            (i=0; while true; do i=$((i+1)); wget -q -O /dev/null --post-data="etape-$i" http://trackr-api:9898/cache/colis-$n-$i; done) &
+          done
+          sleep 300
+      resources:
+        requests: { cpu: "200m", memory: "32Mi" }
+        limits:   { cpu: "1", memory: "64Mi" }

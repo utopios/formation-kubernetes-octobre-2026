@@ -1,0 +1,25 @@
+# Module 4 — Pourquoi hostPath est dangereux : le pod lit le systeme de fichiers du noeud.
+# Ici en lecture seule ; en lecture-ecriture, un pod pourrait modifier le noeud.
+# Le niveau « baseline » de Pod Security Admission interdit hostPath (module 7).
+# kubectl apply -n trackr -f 31-hostpath-risque.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-risque
+spec:
+  containers:
+    - name: curieux
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      volumeMounts:
+        - name: racine-noeud
+          mountPath: /host
+          readOnly: true
+      resources:
+        requests: { cpu: "10m", memory: "8Mi" }
+        limits:   { cpu: "50m", memory: "16Mi" }
+  volumes:
+    - name: racine-noeud
+      hostPath:
+        path: /
+        type: Directory

@@ -1,0 +1,96 @@
+# Module 4 — trackr-api : ressources, configuration, init container, anti-affinite
+# kubectl apply -n trackr -f 12-trackr-api.yaml   (apres 10-trackr-config et 11-trackr-cache)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackr-api
+  labels:
+    app.kubernetes.io/name: trackr-api
+    app.kubernetes.io/part-of: trackr
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trackr-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: trackr-api
+        app.kubernetes.io/part-of: trackr
+    spec:
+      securityContext:
+        fsGroup: 101              # groupe de l'utilisateur « app » de l'image podinfo
+      # Repartir les replicas sur des noeuds differents (preference, pas obligation)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: trackr-api
+      initContainers:
+        # Attend que le cache reponde avant de demarrer l'API
+        - name: wait-cache
+          image: busybox:1.37
+          command: ["sh", "-c", "until nc -z -w 2 trackr-cache 6379; do echo 'attente de trackr-cache'; sleep 2; done; echo 'trackr-cache joignable'"]
+          resources:
+            requests: { cpu: "10m", memory: "8Mi" }
+            limits:   { cpu: "50m", memory: "16Mi" }
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          command: ["./podinfo"]
+          args: ["--port=9898", "--cache-server=tcp://trackr-cache:6379"]
+          ports:
+            - name: http
+              containerPort: 9898
+          envFrom:
+            - configMapRef:
+                name: trackr-config        # toutes les cles valides deviennent des variables
+          env:
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: trackr-api-secrets
+                  key: API_TOKEN
+          resources:
+            requests: { cpu: "50m", memory: "32Mi" }
+            limits:   { cpu: "250m", memory: "64Mi" }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/trackr/config
+              readOnly: true
+            - name: secrets
+              mountPath: /etc/trackr/secrets
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: trackr-fichiers
+            items:
+              - key: trackr.properties
+                path: trackr.properties
+        - name: secrets
+          secret:
+            secretName: trackr-api-secrets
+            defaultMode: 0440      # lisible par le proprietaire et le groupe (fsGroup)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-api
+  labels:
+    app.kubernetes.io/name: trackr-api
+    app.kubernetes.io/part-of: trackr
+spec:
+  selector:
+    app.kubernetes.io/name: trackr-api
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http

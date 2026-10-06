@@ -1,0 +1,14 @@
+# Module 4 — Le scheduler place selon les REQUESTS, pas selon la consommation reelle.
+# Aucun noeud du lab n'a 8 Gi allouables (environ 5,7 Gi chacun) : le pod reste Pending.
+# kubectl apply -n trackr -f 23-request-trop-grande.yaml ; kubectl describe pod api-gourmande
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-gourmande
+spec:
+  containers:
+    - name: api
+      image: ghcr.io/stefanprodan/podinfo:6.9.2
+      resources:
+        requests: { cpu: "100m", memory: "8Gi" }
+        limits:   { cpu: "200m", memory: "8Gi" }

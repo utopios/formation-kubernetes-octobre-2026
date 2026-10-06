@@ -1,0 +1,45 @@
+# Module 4 — Mesure : une boucle infinie limitee en CPU est ralentie (throttling), pas tuee.
+# Trois pods identiques, seule la limite CPU change.
+# kubectl top pod -l demo=cpu ; kubectl exec cpu-200m -- cat /sys/fs/cgroup/cpu.stat
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-100m
+  labels: { demo: cpu }
+spec:
+  containers:
+    - name: burner
+      image: busybox:1.37
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests: { cpu: "100m", memory: "16Mi" }
+        limits:   { cpu: "100m", memory: "16Mi" }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-200m
+  labels: { demo: cpu }
+spec:
+  containers:
+    - name: burner
+      image: busybox:1.37
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests: { cpu: "200m", memory: "16Mi" }
+        limits:   { cpu: "200m", memory: "16Mi" }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-500m
+  labels: { demo: cpu }
+spec:
+  containers:
+    - name: burner
+      image: busybox:1.37
+      command: ["sh", "-c", "while true; do :; done"]
+      resources:
+        requests: { cpu: "500m", memory: "16Mi" }
+        limits:   { cpu: "500m", memory: "16Mi" }
