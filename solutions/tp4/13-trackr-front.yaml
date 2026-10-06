@@ -1,0 +1,61 @@
+# Module 4 — trackr-front : ressources et repartition par topologySpreadConstraints
+# kubectl apply -n trackr -f 13-trackr-front.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trackr-front
+  labels:
+    app.kubernetes.io/name: trackr-front
+    app.kubernetes.io/part-of: trackr
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: trackr-front
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: trackr-front
+        app.kubernetes.io/part-of: trackr
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1                              # ecart maximal entre deux noeuds
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor                 # ne pas compter le control-plane (taint)
+          matchLabelKeys: ["pod-template-hash"]   # ne compter que les pods de la meme revision
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: trackr-front
+      containers:
+        - name: front
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          command: ["./podinfo"]
+          args: ["--port=9898", "--backend-url=http://trackr-api:9898/echo"]
+          ports:
+            - name: http
+              containerPort: 9898
+          envFrom:
+            - configMapRef:
+                name: trackr-config
+          resources:
+            requests: { cpu: "50m", memory: "32Mi" }
+            limits:   { cpu: "250m", memory: "64Mi" }
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-front
+  labels:
+    app.kubernetes.io/name: trackr-front
+    app.kubernetes.io/part-of: trackr
+spec:
+  selector:
+    app.kubernetes.io/name: trackr-front
+  ports:
+    - name: http
+      port: 9898
+      targetPort: http
