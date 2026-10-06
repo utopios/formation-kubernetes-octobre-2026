@@ -1,0 +1,22 @@
+# Module 4 — Le control-plane porte le taint node-role.kubernetes.io/control-plane:NoSchedule.
+# Ce pod de diagnostic le tolere ET le cible : il s'execute sur le control-plane.
+# A reserver aux outils d'infrastructure (agents de supervision, CNI...), jamais a TrackR.
+# kubectl apply -n trackr -f 58-toleration-control-plane.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: diag-control-plane
+spec:
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  containers:
+    - name: diag
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      resources:
+        requests: { cpu: "10m", memory: "8Mi" }
+        limits:   { cpu: "50m", memory: "16Mi" }

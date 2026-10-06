@@ -1,0 +1,30 @@
+# Module 4 — Mesure : anti-affinite REQUISE entre replicas (1 replica maximum par noeud).
+# 3 replicas pour 2 workers schedulables : le 3e reste Pending (FailedScheduling).
+# kubectl apply -n trackr -f 51-anti-affinite-requise.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-anti-requise
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: api-anti-requise
+  template:
+    metadata:
+      labels:
+        app: api-anti-requise
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app: api-anti-requise
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "100m", memory: "64Mi" }

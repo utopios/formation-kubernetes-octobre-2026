@@ -1,0 +1,29 @@
+# Module 4 — nodeAffinity : une regle obligatoire (required) et une preference (preferred).
+# required  : jamais sur un noeud de control-plane
+# preferred : de preference sur un noeud disque=ssd (poids 80), sinon ailleurs
+# kubectl apply -n trackr -f 56-nodeaffinity.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: api-affinite
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 80
+          preference:
+            matchExpressions:
+              - key: disque
+                operator: In
+                values: ["ssd"]
+  containers:
+    - name: api
+      image: ghcr.io/stefanprodan/podinfo:6.9.2
+      resources:
+        requests: { cpu: "20m", memory: "32Mi" }
+        limits:   { cpu: "100m", memory: "64Mi" }

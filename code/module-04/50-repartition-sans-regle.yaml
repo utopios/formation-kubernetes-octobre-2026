@@ -1,0 +1,24 @@
+# Module 4 — Mesure : repartition de 6 replicas de l'API SANS regle de placement.
+# Le scheduler repartit « au mieux » (scores), sans aucune garantie.
+# kubectl apply -n trackr -f 50-repartition-sans-regle.yaml
+# kubectl get pod -n trackr -l app=api-repartition -o custom-columns=POD:.metadata.name,NOEUD:.spec.nodeName
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-repartition
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: api-repartition
+  template:
+    metadata:
+      labels:
+        app: api-repartition
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "100m", memory: "64Mi" }

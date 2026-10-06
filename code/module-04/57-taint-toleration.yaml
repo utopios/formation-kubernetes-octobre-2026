@@ -1,0 +1,40 @@
+# Module 4 — Noeud dedie : taint (repousse) + label (attire) + toleration (autorise).
+# kubectl taint node <worker> dedie=cache:NoSchedule
+# kubectl label node <worker> dedie=cache
+# kubectl apply -n trackr -f 57-taint-toleration.yaml
+# (lab partage : teste sous m04-dedie, taint retire immediatement apres la mesure)
+---
+# Sans toleration : ne peut aller ni sur le noeud dedie (taint) ni ailleurs (nodeSelector) => Pending
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cache-sans-toleration
+spec:
+  nodeSelector:
+    dedie: cache
+  containers:
+    - name: redis
+      image: redis:7.4-alpine
+      resources:
+        requests: { cpu: "50m", memory: "64Mi" }
+        limits:   { cpu: "250m", memory: "128Mi" }
+---
+# Avec toleration : autorise sur le noeud dedie, et attire par le nodeSelector
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cache-dedie
+spec:
+  nodeSelector:
+    dedie: cache
+  tolerations:
+    - key: dedie
+      operator: Equal
+      value: cache
+      effect: NoSchedule
+  containers:
+    - name: redis
+      image: redis:7.4-alpine
+      resources:
+        requests: { cpu: "50m", memory: "64Mi" }
+        limits:   { cpu: "250m", memory: "128Mi" }

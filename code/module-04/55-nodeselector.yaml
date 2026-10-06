@@ -1,0 +1,17 @@
+# Module 4 — nodeSelector : le pod ne va QUE sur un noeud portant le label disque=ssd.
+# Sans noeud etiquete : Pending (FailedScheduling).
+# kubectl label node <worker> disque=ssd ; kubectl apply -n trackr -f 55-nodeselector.yaml
+# (lab partage : label teste sous le nom m04-disque, retire apres la mesure)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cache-ssd
+spec:
+  nodeSelector:
+    disque: ssd
+  containers:
+    - name: redis
+      image: redis:7.4-alpine
+      resources:
+        requests: { cpu: "50m", memory: "64Mi" }
+        limits:   { cpu: "250m", memory: "128Mi" }

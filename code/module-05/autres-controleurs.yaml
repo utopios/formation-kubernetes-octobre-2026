@@ -1,0 +1,105 @@
+# Panorama des autres contrôleurs (module 5).
+# StatefulSet : identité stable (redis-0, redis-1) + Service headless + un PVC par pod.
+apiVersion: v1
+kind: Service
+metadata:
+  name: trackr-redis-hl
+spec:
+  clusterIP: None
+  selector: {app: trackr-redis-sts}
+  ports:
+    - {name: redis, port: 6379}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trackr-redis
+spec:
+  serviceName: trackr-redis-hl
+  replicas: 2
+  selector:
+    matchLabels: {app: trackr-redis-sts}
+  template:
+    metadata:
+      labels: {app: trackr-redis-sts}
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          ports:
+            - {name: redis, containerPort: 6379}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests: {storage: 100Mi}
+---
+# DaemonSet : un agent par nœud (ici un faux collecteur de logs).
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: m05-agent-noeud
+spec:
+  selector:
+    matchLabels: {app: m05-agent-noeud}
+  template:
+    metadata:
+      labels: {app: m05-agent-noeud}
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: agent
+          image: busybox:1.37
+          command: ["sh", "-c", "while true; do echo agent sur $NODE; sleep 3600; done"]
+          env:
+            - name: NODE
+              valueFrom:
+                fieldRef: {fieldPath: spec.nodeName}
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}
+---
+# Job : traitement ponctuel, 3 exécutions réussies, 2 en parallèle.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trackr-import-colis
+spec:
+  completions: 3
+  parallelism: 2
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: import
+          image: busybox:1.37
+          command: ["sh", "-c", "echo import du lot $HOSTNAME; sleep 3; echo termine"]
+---
+# CronJob : purge du cache chaque minute (exemple de formation).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: trackr-purge
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Allow 
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: purge
+              image: redis:7.4-alpine
+              command: ["sh", "-c", "redis-cli -h trackr-cache DBSIZE && echo purge simulee"]

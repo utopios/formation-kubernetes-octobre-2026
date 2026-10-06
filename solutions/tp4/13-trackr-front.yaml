@@ -30,7 +30,7 @@ spec:
               app.kubernetes.io/name: trackr-front
       containers:
         - name: front
-          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          image: ghcr.io/stefanprodan/podinfo:6.8.1
           command: ["./podinfo"]
           args: ["--port=9898", "--backend-url=http://trackr-api:9898/echo"]
           ports:

@@ -1,0 +1,24 @@
+# TrackR — mise à l'échelle automatique de l'API (metrics-server requis).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: trackr-api
+  labels:
+    app.kubernetes.io/part-of: trackr
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: trackr-api
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60   # 300 s par défaut ; réduit pour la formation

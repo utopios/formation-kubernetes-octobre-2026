@@ -1,0 +1,32 @@
+# Module 4 — Mesure : anti-affinite PREFEREE (poids 100) avec 6 replicas.
+# Le scheduler essaie d'eviter les noeuds deja occupes, mais place quand meme tout le monde.
+# kubectl apply -n trackr -f 52-anti-affinite-preferee.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-anti-preferee
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: api-anti-preferee
+  template:
+    metadata:
+      labels:
+        app: api-anti-preferee
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: api-anti-preferee
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "100m", memory: "64Mi" }

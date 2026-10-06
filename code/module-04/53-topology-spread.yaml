@@ -1,0 +1,32 @@
+# Module 4 — Mesure : topologySpreadConstraints maxSkew 1 sur les noeuds, 5 replicas.
+# PIEGE mesure sur le lab : le control-plane (taint NoSchedule) compte comme un domaine
+# a 0 pod (nodeTaintsPolicy: Ignore par defaut) => 1 pod par worker, 3 pods Pending.
+# Correction : voir 54-topology-spread-honor.yaml
+# kubectl apply -n trackr -f 53-topology-spread.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-spread
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: api-spread
+  template:
+    metadata:
+      labels:
+        app: api-spread
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: api-spread
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "100m", memory: "64Mi" }

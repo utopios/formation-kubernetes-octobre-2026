@@ -1,0 +1,32 @@
+# Module 4 — Mesure : topologySpreadConstraints maxSkew 1 sur les noeuds, 5 replicas.
+# Correction du piege de 53 : nodeTaintsPolicy: Honor exclut le control-plane du calcul.
+# Resultat mesure : 3/2 sur les deux workers.
+# kubectl apply -n trackr -f 54-topology-spread-honor.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-spread-honor
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: api-spread-honor
+  template:
+    metadata:
+      labels:
+        app: api-spread-honor
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor     # ignorer les noeuds dont on ne tolere pas les taints
+          labelSelector:
+            matchLabels:
+              app: api-spread-honor
+      containers:
+        - name: api
+          image: ghcr.io/stefanprodan/podinfo:6.9.2
+          resources:
+            requests: { cpu: "20m", memory: "32Mi" }
+            limits:   { cpu: "100m", memory: "64Mi" }
