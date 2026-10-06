@@ -1,0 +1,31 @@
+# TP 2 — Fichier de réponses de l'enquête « qui a fait quoi ? »
+# Copiez ce fichier en reponses.txt (dans le dossier d'où vous lancez le vérificateur)
+# et complétez chaque ligne après le signe =. Une réponse par ligne, sur une seule ligne.
+#
+# X.composant : UN composant parmi
+#   api-server, etcd, scheduler, kubelet, kube-proxy, runtime (containerd),
+#   ou un contrôleur précis du controller-manager : contrôleur deployment,
+#   contrôleur replicaset, contrôleur endpointslice, garbage collector,
+#   ou un plugin d'admission de l'API Server (donnez son nom).
+# X.client    : nom du client (gestionnaire de champs) à l'origine de la demande.
+# X.preuve    : la preuve tirée du cluster (champ, événement, valeur relevée).
+
+A.composant=
+A.preuve=
+
+B.composant=
+B.preuve=
+
+C.client=
+C.composant=
+C.preuve=
+
+D.client=
+D.composant=
+D.preuve=
+
+E.composant=
+E.preuve=
+
+F.composant=
+F.preuve=

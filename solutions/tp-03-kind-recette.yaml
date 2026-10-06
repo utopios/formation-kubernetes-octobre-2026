@@ -1,0 +1,10 @@
+# Cluster de recette mono-nœud (TP 3, niveau 2). Pas d'extraPortMappings : le port 30080 est déjà pris par le lab.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: trackr-recette
+networking:
+  apiServerAddress: "127.0.0.1"
+  apiServerPort: 6445
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.35.0
